@@ -19,6 +19,10 @@ RUN apk del go
 
 RUN go version
 
+RUN go get -u github.com/gorilla/mux
+
+RUN go get github.com/lib/pq
+
 COPY main.go ./
 ENV GO111MODULE=off
 RUN go build -o rinha-app .

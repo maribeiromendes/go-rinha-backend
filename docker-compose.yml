@@ -7,8 +7,8 @@ services:
     hostname: api01
     ports:
       - "3001:80"
-    # depends_on:
-    #   - db
+    depends_on:
+      - db
     deploy:
       resources:
         limits:
@@ -38,21 +38,21 @@ services:
           cpus: '0.15'
           memory: '0.5GB'
 
-  # db:
-  #   image: postgres:latest
-  #   container_name: db
-  #   hostname: db
-  #   environment:
-  #     - POSTGRES_PASSWORD=123
-  #     - POSTGRES_USER=admin
-  #     - POSTGRES_DB=rinha
-  #   ports:
-  #     - "5432:5432"
-  #   volumes:
-  #     - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-  #   command: postgres -c checkpoint_timeout=600 -c max_wal_size=4096
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         cpus: "0.45"
-  #         memory: "140MB"
+  db:
+    image: postgres:latest
+    container_name: db
+    hostname: db
+    environment:
+      - POSTGRES_PASSWORD=123
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=rinha
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: postgres -c checkpoint_timeout=600 -c max_wal_size=4096
+    deploy:
+      resources:
+        limits:
+          cpus: "0.45"
+          memory: "140MB"
