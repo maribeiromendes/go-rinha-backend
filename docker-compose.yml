@@ -24,6 +24,7 @@ services:
 
   haproxy: # Load Balancer
     image: haproxy
+    container_name: haproxy
     ports:
       - "8100:8100"
     volumes:
@@ -31,7 +32,6 @@ services:
     depends_on:
       - api01
       - api02
-    # network_mode: host
     deploy:
       resources:
         limits:
