@@ -1,4 +1,4 @@
-POST http://localhost:8000/clientes/1/transacoes
+POST {{baseUrl}}/clientes/1/transacoes
 
 {
     "valor": 1000,

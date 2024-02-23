@@ -1,30 +1,25 @@
-FROM alpine:latest
+#Based on https://stackoverflow.com/questions/52266332/manually-fetch-dependencies-from-go-mod
+FROM golang:latest as builder
 WORKDIR /app
-EXPOSE 80
 
-#https://stackoverflow.com/questions/52056387/how-to-install-go-in-alpine-linux
-ARG GOLANG_VERSION=1.21.7
+# Fetch dependencies
+COPY go.mod go.sum ./
+RUN go mod download
 
-RUN apk update && apk add go gcc bash musl-dev openssl-dev ca-certificates && update-ca-certificates
+COPY . .
 
-RUN wget https://dl.google.com/go/go$GOLANG_VERSION.src.tar.gz && tar -C /usr/local -xzf go$GOLANG_VERSION.src.tar.gz
+# Build the Go app
+COPY cmd/main.go ./
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o rinha-app .
 
-RUN cd /usr/local/go/src && ./make.bash
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates curl
 
-ENV PATH=$PATH:/usr/local/go/bin
+RUN mkdir /app
 
-RUN rm go$GOLANG_VERSION.src.tar.gz
+WORKDIR /app/
 
-RUN apk del go
-
-RUN go version
-
-RUN go get -u github.com/gorilla/mux
-
-RUN go get github.com/lib/pq
-
-COPY main.go ./
-ENV GO111MODULE=off
-RUN go build -o rinha-app .
+# Copy the Pre-built binary file from the previous stage
+COPY --from=builder /app/rinha-app .
 
 CMD [ "./rinha-app" ]
