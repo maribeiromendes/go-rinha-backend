@@ -11,6 +11,7 @@ import (
 func hello(w http.ResponseWriter, req *http.Request) {
 	fmt.Println("/hello endpoint called")
 	fmt.Fprintf(w, "hello\n")
+  
 }
 
 func main() {
@@ -24,3 +25,5 @@ func main() {
 	log.Println(fmt.Sprintf("Server up and listening on port: %d...", port))
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), r))
 }
+
+

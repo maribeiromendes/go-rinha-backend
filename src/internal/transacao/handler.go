@@ -10,18 +10,18 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Handler struct{}
+type TransacaoHandler struct{}
 
-func NewHandler() *Handler {
-	return &Handler{}
+func NewHandler() *TransacaoHandler {
+	return &TransacaoHandler{}
 }
 
-func (h *Handler) SetRoutes(router *mux.Router) {
+func (h *TransacaoHandler) SetRoutes(router *mux.Router) {
 	router.HandleFunc("/clientes/{id}/transacoes", h.TransacoesDoCliente).Methods("POST")
 
 }
 
-func (h *Handler) TransacoesDoCliente(w http.ResponseWriter, r *http.Request) {
+func (h *TransacaoHandler) TransacoesDoCliente(w http.ResponseWriter, r *http.Request) {
 	log.Println("/clientes/{id}/transacoes endpoint called")
 	vars := mux.Vars(r)
 
