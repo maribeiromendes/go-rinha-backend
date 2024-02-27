@@ -20,32 +20,29 @@ func (h *TransacaoHandler) SetRoutes(router *mux.Router) {
 }
 
 func (h *TransacaoHandler) TransacoesDoCliente(w http.ResponseWriter, r *http.Request) {
-	log.Println("/clientes/{id}/transacoes endpoint called")
 	if r.Body == nil {
-    http.Error(w, "request must contain a body", http.StatusBadRequest) 
-    return
-  }
-  
+		http.Error(w, "request must contain a body", http.StatusBadRequest)
+		return
+	}
+
 	//vars := mux.Vars(r)
 
-  decoder := json.NewDecoder(r.Body)
-	
+	decoder := json.NewDecoder(r.Body)
+
 	var t Transacao
-  err := decoder.Decode(&t)
+	err := decoder.Decode(&t)
 	if err != nil {
-    http.Error(w, "invalid request body", http.StatusBadRequest) 
-    log.Printf(err.Error())
-    return
+		http.Error(w, "invalid request body", http.StatusBadRequest)
+		log.Printf(err.Error())
+		return
 	}
 	//log.Println(t.Valor)
 	//log.Println(vars["tipo"])
 
-  result := RetornoTransacao{ Limite: 10, Saldo: 5}
-  jsonResponse, _ := json.Marshal(result) 
+	result := RetornoTransacao{Limite: 10, Saldo: 5}
+	jsonResponse, _ := json.Marshal(result)
 
-  w.Header().Set("Content-Type", "application/json")
-  w.Write(jsonResponse)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonResponse)
 
-
-  
 }
