@@ -2,40 +2,50 @@ package transacao
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 )
 
-type Handler struct{}
+type TransacaoHandler struct{}
 
-func NewHandler() *Handler {
-	return &Handler{}
+func NewHandler() *TransacaoHandler {
+	return &TransacaoHandler{}
 }
 
-func (h *Handler) SetRoutes(router *mux.Router) {
+func (h *TransacaoHandler) SetRoutes(router *mux.Router) {
 	router.HandleFunc("/clientes/{id}/transacoes", h.TransacoesDoCliente).Methods("POST")
 
 }
 
-func (h *Handler) TransacoesDoCliente(w http.ResponseWriter, r *http.Request) {
+func (h *TransacaoHandler) TransacoesDoCliente(w http.ResponseWriter, r *http.Request) {
 	log.Println("/clientes/{id}/transacoes endpoint called")
-	vars := mux.Vars(r)
+	if r.Body == nil {
+    http.Error(w, "request must contain a body", http.StatusBadRequest) 
+    return
+  }
+  
+	//vars := mux.Vars(r)
 
-	fmt.Fprintf(w, "hello\n")
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		panic(err)
-	}
-	log.Println(string(body))
+  decoder := json.NewDecoder(r.Body)
+	
 	var t Transacao
-	err = json.Unmarshal(body, &t)
+  err := decoder.Decode(&t)
 	if err != nil {
-		panic(err)
+    http.Error(w, "invalid request body", http.StatusBadRequest) 
+    log.Printf(err.Error())
+    return
 	}
-	log.Println(t.Valor)
-	log.Println(vars["tipo"])
+	//log.Println(t.Valor)
+	//log.Println(vars["tipo"])
+
+  result := RetornoTransacao{ Limite: 10, Saldo: 5}
+  jsonResponse, _ := json.Marshal(result) 
+
+  w.Header().Set("Content-Type", "application/json")
+  w.Write(jsonResponse)
+
+
+  
 }
