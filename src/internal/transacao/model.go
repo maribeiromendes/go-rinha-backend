@@ -2,6 +2,12 @@ package transacao
 
 import "time"
 
+type Cliente struct {
+  Id int
+  Limite int
+  Saldo int
+}
+
 type Transacao struct {
 	Valor     int    `json:"valor"`
 	Tipo      string `json:"tipo"`
