@@ -2,7 +2,10 @@ package transacao
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"m/internal/cliente"
+	"m/internal/common"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,15 +13,16 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type TransacaoHandler struct{}
+type TransacaoHandler struct{
+  clienteRepository common.Repository 
+}
 
-func NewHandler() *TransacaoHandler {
-	return &TransacaoHandler{}
+func NewHandler(clienteRepository common.Repository) *TransacaoHandler {
+	return &TransacaoHandler{clienteRepository: clienteRepository}
 }
 
 func (h *TransacaoHandler) SetRoutes(router *mux.Router) {
   router.HandleFunc("/clientes/{id}/transacoes", h.TransacoesDoCliente).Methods("POST")
-
 }
 
 func (h *TransacaoHandler) TransacoesDoCliente(w http.ResponseWriter, r *http.Request) {
@@ -28,12 +32,11 @@ func (h *TransacaoHandler) TransacoesDoCliente(w http.ResponseWriter, r *http.Re
     return
   }
 
-  cliente := GetClient(w, r)
-  if cliente == nil {
-    http.Error(w, "usuario nao encontrado", http.StatusNotFound)
+  cliente, err := h.getClient(w, r)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusNotFound)
     return
   }
-
 
   // Validate limit
   var valor int
@@ -75,16 +78,16 @@ func ValidateBody[T any](w http.ResponseWriter, r *http.Request, out *T) bool {
     log.Printf(err.Error())
     return false
   }
-
   return true
 }
 
-func GetClient(w http.ResponseWriter, request *http.Request) *Cliente {
-  // Mocks a database, must be replaced by repository method later
+func (h *TransacaoHandler) getClient(w http.ResponseWriter, request *http.Request) (*cliente.Cliente, error) {
 	vars := mux.Vars(request)
-  idCliente, err := strconv.Atoi(vars["id"])
-  if err != nil || (idCliente < 0 || idCliente > 5) {
-    return nil
+  idStr := vars["id"]
+  idCliente, err := strconv.Atoi(idStr)
+  if err != nil {
+    return nil, fmt.Errorf("id: '%s' invalido", idStr) 
   }
-  return &Cliente { idCliente, 10000, 0}
+  client, err := h.clienteRepository.GetById(idCliente)
+  return client.(*cliente.Cliente), err 
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"m/internal/cliente"
 	"m/internal/middlewares"
 	"m/internal/transacao"
 	"net/http"
@@ -20,8 +21,10 @@ func main() {
 	r := mux.NewRouter()
 	log.Println("Registering routes")
 	r.HandleFunc("/", hello)
-  r.Use(middlewares.Logging)
-	transacao_handler := transacao.NewHandler()
+  r.Use(middlewares.LoggingMiddleware)
+  
+  clientRepo := cliente.ClienteRepository{}
+	transacao_handler := transacao.NewHandler(&clientRepo)
 	transacao_handler.SetRoutes(r)
 
 	port := 8000
