@@ -2,50 +2,102 @@ package transacao
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"m/internal/cliente"
+	"m/internal/common"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
 
-type TransacaoHandler struct{}
+type ErrorResponse struct {
+	Message string `json:"mensagem"`
+}
 
-func NewHandler() *TransacaoHandler {
-	return &TransacaoHandler{}
+type TransacaoHandler struct {
+  clienteRepository common.Repository 
+}
+
+func NewHandler(clienteRepository common.Repository) *TransacaoHandler {
+	return &TransacaoHandler{clienteRepository: clienteRepository}
 }
 
 func (h *TransacaoHandler) SetRoutes(router *mux.Router) {
-	router.HandleFunc("/clientes/{id}/transacoes", h.TransacoesDoCliente).Methods("POST")
-
+  router.HandleFunc("/clientes/{id}/transacoes", h.TransacoesDoCliente).Methods("POST")
 }
 
 func (h *TransacaoHandler) TransacoesDoCliente(w http.ResponseWriter, r *http.Request) {
-	log.Println("/clientes/{id}/transacoes endpoint called")
-	if r.Body == nil {
-    http.Error(w, "request must contain a body", http.StatusBadRequest) 
+  // Validate request
+  var t Transacao
+  if !ValidateBody(w, r, &t) {
     return
   }
-  
-	//vars := mux.Vars(r)
 
-  decoder := json.NewDecoder(r.Body)
-	
-	var t Transacao
-  err := decoder.Decode(&t)
-	if err != nil {
-    http.Error(w, "invalid request body", http.StatusBadRequest) 
-    log.Printf(err.Error())
+  cliente, err := h.getClient(w, r)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusNotFound)
     return
-	}
-	//log.Println(t.Valor)
-	//log.Println(vars["tipo"])
+  }
 
-  result := RetornoTransacao{ Limite: 10, Saldo: 5}
-  jsonResponse, _ := json.Marshal(result) 
+  // Validate limit
+  var valor int
+  if strings.ToLower(t.Tipo) == "c" {
+    valor = t.Valor
+  } else {
+    valor = -t.Valor
+  }
+  novoSaldo := cliente.Saldo + valor
+  if novoSaldo < - cliente.Limite {
+    writeErrorJson(w, "sem limite", http.StatusUnprocessableEntity)
+    return
+  }
 
-  w.Header().Set("Content-Type", "application/json")
-  w.Write(jsonResponse)
+  // TODO: Update balance
 
+  // Return response
+	result := RetornoTransacao{ Limite: cliente.Limite, Saldo: novoSaldo }
+  writeJson[RetornoTransacao](w, result, http.StatusOK)
+}
 
-  
+func writeJson[T any](w http.ResponseWriter, content T, status  int) {
+  w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
+
+	jsonResponse, _ := json.Marshal(content)
+	w.Write(jsonResponse)
+}
+
+func writeErrorJson(w http.ResponseWriter, message string, status int) {
+  content := ErrorResponse {Message: message}
+  writeJson(w, content, status)
+}
+
+func ValidateBody[T any](w http.ResponseWriter, r *http.Request, out *T) bool {
+  if r.Body == nil {
+    writeErrorJson(w, "requisicao invalida", http.StatusBadRequest)
+    return false
+  }
+  decoder := json.NewDecoder(r.Body)
+
+  err := decoder.Decode(&out)
+  if err != nil {
+    writeErrorJson(w, "requisicao invalida", http.StatusBadRequest)
+    log.Printf(err.Error())
+    return false
+  }
+  return true
+}
+
+func (h *TransacaoHandler) getClient(w http.ResponseWriter, request *http.Request) (*cliente.Cliente, error) {
+	vars := mux.Vars(request)
+  idStr := vars["id"]
+  idCliente, err := strconv.Atoi(idStr)
+  if err != nil {
+    return nil, fmt.Errorf("id: '%s' invalido", idStr) 
+  }
+  client, err := h.clienteRepository.GetById(idCliente)
+  return client.(*cliente.Cliente), err 
 }
