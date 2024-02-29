@@ -13,7 +13,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type TransacaoHandler struct{
+type ErrorResponse struct {
+	Message string `json:"mensagem"`
+}
+
+type TransacaoHandler struct {
   clienteRepository common.Repository 
 }
 
@@ -47,34 +51,40 @@ func (h *TransacaoHandler) TransacoesDoCliente(w http.ResponseWriter, r *http.Re
   }
   novoSaldo := cliente.Saldo + valor
   if novoSaldo < - cliente.Limite {
-    http.Error(w, "sem limte", http.StatusUnprocessableEntity)
+    writeErrorJson(w, "sem limite", http.StatusUnprocessableEntity)
     return
   }
 
   // TODO: Update balance
 
   // Return response
-	result := RetornoTransacao{ Limite: 1000, Saldo: novoSaldo }
-  WriteJson[RetornoTransacao](w, result)
+	result := RetornoTransacao{ Limite: cliente.Limite, Saldo: novoSaldo }
+  writeJson[RetornoTransacao](w, result, http.StatusOK)
 }
 
-func WriteJson[T any](w http.ResponseWriter, content T) {
+func writeJson[T any](w http.ResponseWriter, content T, status  int) {
+  w.WriteHeader(status)
 	w.Header().Set("Content-Type", "application/json")
 
 	jsonResponse, _ := json.Marshal(content)
 	w.Write(jsonResponse)
 }
 
+func writeErrorJson(w http.ResponseWriter, message string, status int) {
+  content := ErrorResponse {Message: message}
+  writeJson(w, content, status)
+}
+
 func ValidateBody[T any](w http.ResponseWriter, r *http.Request, out *T) bool {
   if r.Body == nil {
-    http.Error(w, "requisicao invalida", http.StatusBadRequest)
+    writeErrorJson(w, "requisicao invalida", http.StatusBadRequest)
     return false
   }
   decoder := json.NewDecoder(r.Body)
 
   err := decoder.Decode(&out)
   if err != nil {
-    http.Error(w, "requisicao invalida", http.StatusBadRequest)
+    writeErrorJson(w, "requisicao invalida", http.StatusBadRequest)
     log.Printf(err.Error())
     return false
   }

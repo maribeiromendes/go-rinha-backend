@@ -46,7 +46,7 @@ func TestTransacoesDoClienteWithInvalidBody(t *testing.T) {
 
 func TestCredit(t *testing.T) {
 	expectedStatusCode := http.StatusOK
-	expectedBody := `{"limite":1000,"saldo":1000}`
+	expectedBody := `{"limite":100,"saldo":1000}`
 
   r := createRouter(&FakeClienteRepository{})
 	req, _ := http.NewRequest("POST", "/clientes/1/transacoes", bytes.NewBuffer([]byte(`{"valor": 1000, "tipo": "c", "descricao": "descricao"}`)))
@@ -56,6 +56,33 @@ func TestCredit(t *testing.T) {
 	assert_equal(rr.Code, expectedStatusCode, t)
 	assert_equal(rr.Body.String(), expectedBody, t)
 }
+
+func TestDebitWhenNoLimit(t *testing.T) {
+  expectedStatusCode := http.StatusUnprocessableEntity
+  expectedBody := `{"mensagem":"sem limite"}`
+
+  r := createRouter(&FakeClienteRepository{})
+  req, _ := http.NewRequest("POST", "/clientes/1/transacoes", bytes.NewBuffer([]byte(`{"valor": 101, "tipo": "d", "descricao": "descricao"}`)))
+  rr := httptest.NewRecorder()
+  r.ServeHTTP(rr, req)
+
+  assert_equal(rr.Code, expectedStatusCode, t)
+  assert_equal(rr.Body.String(), expectedBody, t)
+}
+
+func TestDebitWithLimit(t *testing.T) {
+  expectedStatusCode := http.StatusOK
+	expectedBody := `{"limite":100,"saldo":-100}`
+
+  r := createRouter(&FakeClienteRepository{})
+  req, _ := http.NewRequest("POST", "/clientes/1/transacoes", bytes.NewBuffer([]byte(`{"valor": 100, "tipo": "d", "descricao": "descricao"}`)))
+  rr := httptest.NewRecorder()
+  r.ServeHTTP(rr, req)
+
+  assert_equal(rr.Code, expectedStatusCode, t)
+  assert_equal(rr.Body.String(), expectedBody, t)
+}
+
 
 func createRouter(repository *FakeClienteRepository) *mux.Router {
 	sut := NewHandler(repository)
