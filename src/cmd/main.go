@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"m/internal/cliente"
+	"m/internal/extrato"
 	"m/internal/middlewares"
 	"m/internal/transacao"
 	"net/http"
@@ -25,7 +26,11 @@ func main() {
   
   clientRepo := cliente.ClienteRepository{}
 	transacao_handler := transacao.NewHandler(&clientRepo)
+  extrato_handler := extrato.NewHandler(&clientRepo)
+
+  // Set routes
 	transacao_handler.SetRoutes(r)
+  extrato_handler.SetRoutes(r)
 
 	port := 8000
 	log.Println(fmt.Sprintf("Server up and listening on port: %d...", port))
